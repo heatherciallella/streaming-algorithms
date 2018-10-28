@@ -89,44 +89,61 @@ from bitarray import bitarray
 # print('Actual number of false positives in stream = %s' % (false_positives,))
 
 ################### Part 2 ######################
-from statistics import median
-
-hash_range = 24  # number of bits in the range of the hash functions
-fm_hash_functions = [uhf(find_prime(1000000000), 2**hash_range) for _ in range(35)] # Create the appropriate hashes here
-
-def num_trailing_bits(n):
-    """Returns the number of trailing zeros in bin(n)
-
-    n: integer
-    """
-    n = format(n, 'b')
-
-    return len(n) - len(n.rstrip('0'))
-
-trailing_zeros = [[] for _ in range(35)]
-
-for word in data_stream(): # Implement the Flajolet-Martin algorithm
-    word_as_number = int(''.join(str(ord(letter)) for letter in word))
-    i = 0
-
-    for fn in fm_hash_functions:
-        trailing_zeros[i].append(num_trailing_bits(fn(word_as_number)))
-        i += 1
-
-estimates = [2 ** max(i) for i in trailing_zeros]
-print("Estimate of number of distinct elements = %s" % (median([sum(estimates[i - 5:i]) / len(estimates[i - 5:i])
-                                                                for i in range(5, 36, 5)]),))
+# from statistics import median
+#
+# hash_range = 24  # number of bits in the range of the hash functions
+# fm_hash_functions = [uhf(find_prime(1000000000), 2**hash_range) for _ in range(35)] # Create the appropriate hashes here
+#
+# def num_trailing_bits(n):
+#     """Returns the number of trailing zeros in bin(n)
+#
+#     n: integer
+#     """
+#     n = format(n, 'b')
+#
+#     return len(n) - len(n.rstrip('0'))
+#
+# trailing_zeros = [[] for _ in range(35)]
+#
+# for word in data_stream(): # Implement the Flajolet-Martin algorithm
+#     word_as_number = int(''.join(str(ord(letter)) for letter in word))
+#     i = 0
+#
+#     for fn in fm_hash_functions:
+#         trailing_zeros[i].append(num_trailing_bits(fn(word_as_number)))
+#         i += 1
+#
+# estimates = [2 ** max(i) for i in trailing_zeros]
+# print("Estimate of number of distinct elements = %s" % (median([sum(estimates[i - 5:i]) / len(estimates[i - 5:i])
+#                                                                 for i in range(5, 36, 5)]),))
 
 ################### Part 3 ######################
 
 var_reservoir = [0] * 512
-second_moment = 0
-third_moment = 0
+tracked_words = []
 
 # You can use numpy.random's API for maintaining the reservoir of variables
+i = 0
 
-# for word in data_stream(): # Imoplement the AMS algorithm here
-#    pass
+for word in data_stream(): # Implement the AMS algorithm here
+    if len(tracked_words) < len(var_reservoir) and (word not in tracked_words):
+        tracked_words.append(word)
+        var_reservoir[len(tracked_words) - 1] += 1
 
-print("Estimate of second moment = %s" % (second_moment,))
-print("Estimate of third moment = %s" % (third_moment,))
+    elif word in tracked_words:
+        var_reservoir[tracked_words.index(word)] += 1
+
+    elif len(tracked_words) == 512:
+        rand_number = np.random.randint(0, i)
+
+        if rand_number < 512 and (word not in tracked_words):
+            tracked_words[rand_number] = word
+            var_reservoir[rand_number] = 1
+
+    i += 1
+
+second_moments = [i * (2 * j - 1) for j in var_reservoir]
+third_moments = [i * (3 * j **2 - 3 * j + 1) for j in var_reservoir]
+
+print("Estimate of second moment = %s" % (sum(second_moments) / len(second_moments),))
+print("Estimate of third moment = %s" % (sum(third_moments) / len(third_moments),))
